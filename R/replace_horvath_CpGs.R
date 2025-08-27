@@ -1,5 +1,14 @@
 ## Find missing CpGs find the missing CpGs in a given data set for a given clock.
 
+#' Title
+#'
+#' @param x
+#' @param clock
+#'
+#' @returns
+#' @export
+#'
+#' @examples
 find_missing_CpGs<-function(x,clock){
   x<-cbind("ProbeID"=rownames(x),x)
   x[,-1]<-lapply(x[,-1],as.numeric)
