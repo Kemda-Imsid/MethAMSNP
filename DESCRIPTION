@@ -2,8 +2,8 @@ Package: MethAMSNP
 Title: What the Package Does (One Line, Title Case)
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Christelle Ngueda Kemda", "Lutz leistritz", , "Christelle.Ngueda-Kemda@med.uni-jena.de", role = c("aut", "cre"))
+Description: Convenience functions to make some common tasks to explore the feasibility of developing ageing-related predictive models using DNA methylation values predicted from SNP genotypes. Since direct methylation profiling can be costly or unavailable, we assess whether SNP-predicted methylation at CpG sites can effectively substitute for measured data in epigenetic clocks.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8

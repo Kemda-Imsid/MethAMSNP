@@ -1,1 +1,1 @@
-# MethAMSNP
+This package contains convenience functions to make some common tasks to explore the feasibility of developing ageing-related predictive models using DNA methylation values predicted from SNP genotypes. Since direct methylation profiling can be costly or unavailable, we assess whether SNP-predicted methylation at CpG sites can effectively substitute for measured data in epigenetic clocks.
