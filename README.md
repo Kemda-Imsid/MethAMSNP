@@ -1,1 +1,39 @@
-This package contains convenience functions to make some common tasks to explore the feasibility of developing ageing-related predictive models using DNA methylation values predicted from SNP genotypes. Since direct methylation profiling can be costly or unavailable, we assess whether SNP-predicted methylation at CpG sites can effectively substitute for measured data in epigenetic clocks.
+
+
+
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# Ageing Model Helper
+
+## Overview
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+This package provides a set of convenience functions designed to support the development of ageing-related predictive models using DNA methylation values inferred from SNP genotypes.
+
+Direct DNA methylation profiling can be costly or unavailable in many studies. As an alternative, this package helps researchers evaluate whether SNP-predicted methylation levels at CpG sites can serve as effective substitutes for measured methylation data in building epigenetic clocks and other ageing-related models.
+
+
+## Installation
+
+You can install the development version of somepackage from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("Kemda-Imsid/MethAMSNP")
+```
+
