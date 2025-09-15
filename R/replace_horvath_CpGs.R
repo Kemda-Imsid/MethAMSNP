@@ -1,50 +1,118 @@
-## Find missing CpGs find the missing CpGs in a given data set for a given clock.
-
-#' Title
+#' find_missing_CpGs
+#' Find the missing CpGs names for a given data set for a given clock.
+#' @param data_miss a dataframe containing the CpGs in columns and Sample in rows. the dataframe in wich the missing CpGs be imputed.
+#' @param clock a clock names amount these, "coefBLUP", "coefEN", "coefHannum", "coefHorvath", "coefLevine", "coefPedBE", "coefSkin", "coefTL", "coefWu")
 #'
-#' @param x
-#' @param clock
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-find_missing_CpGs<-function(x,clock){
-  x<-cbind("ProbeID"=rownames(x),x)
-  x[,-1]<-lapply(x[,-1],as.numeric)
+#' @returns A list with two elements:
+#' \describe{
+#'   \item{missing}{CpGs required for the clock that are not found in the input data frame.}
+#'   \item{present}{CpGs required for the specified clock that are present in the input data frame.}
+#' }
 
-  missing_CpGs <- checkClocks(x,clocks=clock)###78.2% missing
-
+find_missing_CpGs<-function(data_miss,clock){
+  data_miss<-data.frame(t(data_miss[1:3,]))
+  data_miss<-data.frame(cbind("ProbeID"=rownames(data_miss),data_miss))
+  data_miss[,-1]<-lapply(data_miss[,-1],as.numeric)
+  missing_CpGs <- methylclock::checkClocks(data_miss,clocks=clock,localHub=TRUE)
   if(length(missing_CpGs[[clock]]!=0)){
     missing_CpGs<-missing_CpGs[[clock]]
   }else{
     missing_CpGs<-missing_CpGs[[clock]]
   }
   coefs<-get(paste0("coef",clock))
-  present_CpGs<-coefs$CpGmarker[-1][!coefs$CpGmarker%in%missing_CpGs]
+  present_CpGs<-coefs$CpGmarker[-1][!coefs$CpGmarker[-1]%in%missing_CpGs]
   return(list(missing_CpGs,present_CpGs))
 }
 
-#missing_CpGs<-find_missing_CpGs(imputed_methylation_snp_horvath_beta,"Hannum")
+missing_CpGs<-find_missing_CpGs(imputed_methylation_snp_beta_s,"Horvath")
 
+#' add_missing_CpGs
+#' the function crates some empty value columns to the dataframe for the missings CpGs
+#' @param data a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
+#' @param x missing CpGs names
+#'
+#' @returns a data frame containing empty columns for the missing CpGs names
 
+add_missing_CpGs<-function(data, x){
+    # Create a list of empty columns (NA values)
+    x <- data.frame(setNames(
+      replicate(length(x), rep(NA, nrow(data)), simplify = FALSE), x))
+    # Bind the empty columns to the original data frame
+    data <- cbind(x,data)
+    return(data)
+  }
 
-# c<-c("cg06117855" ,"cg06513075" ,"cg06688848", "cg06836772" ,"cg06926735",
-# "cg07849904", "cg08186124", "cg08331960" ,"cg09133026", "cg09441152","cg09722397",
-# "cg09722555" ,"cg10266490", "cg10865119" ,"cg10940099")
+#data<-add_missing_CpGs(imputed_methylation_snp_beta_s,missing_CpGs[[1]])
 
+CpGs_to_replace<-function(data){
 
-# ##### replace snp with the nearest neighbor
-
-replace_missings_CpGs<-function(x,y){
-  x$pos<-as.numeric(x$pos)
-  y$pos<-as.numeric(y$pos)
-  x<-data.frame(x[order(x[,"pos"]),])
-  y<-data.frame(y[order(y[,"pos"]),])
-  for (i in 1:length(x$Name)) {
+  # ref450<-data.frame(minfi::getAnnotation("IlluminaHumanMethylation450kanno.ilmn12.hg19"))[,c("chr","strand","Name","pos","Islands_Name")]
+  # ref850<-data.frame(minfi::getAnnotation("IlluminaHumanMethylationEPICanno.ilm10b4.hg19"))[,c("chr","strand","Name","pos","Islands_Name")]
+  ref450<- read.csv("Data/ref450.csv")
+  ref850<- read.csv("Data/ref850.csv")
+  df_annotation<-data.frame(rbind(cbind("chr"=ref850$chr,"pos"=ref850$pos,"strand"=ref850$strand,"Name"=ref850$Name),
+                         cbind("chr"=ref450$chr,"pos"=ref450$pos,"strand"=ref450$strand,"Name"=ref450$Name)))##a little bit more than the 850
+  df_annotation<-df_annotation[!duplicated(df_annotation$Name),]
+  data<- cbind("chr" =  df_annotation$chr[match(data, df_annotation$Name)],
+               "pos" = df_annotation$pos[match(data, df_annotation$Name)],
+               "strand" =  df_annotation$strand[match(data, df_annotation$Name)],"Name"=data)
+  data<-data.frame(data[order(data[,"chr"],data[,"strand"],data[,"pos"]),])
+  data <- split(data, f=list(data$chr, data$strand))
+  v<-c()
+  for(i in 1:length(data)){
+    if(nrow(data[[i]])==0){
+      v<-c(v,names(data)[i])
+    }
+  }
+  data[[v]]<-NULL
+  data_imp<-lapply(replace_missings_CpGs,data,mc.cores=4)
+  data$cpgstoreplace<-NA
+  data$dist<-NA
+  data_miss.imp_a<-data.frame(matrix(nrow=0,ncol=6))
+  colnames(data_miss.imp_a)<-c("chr", "pos","strand", "Name", "cpgstoreplace","dist")
+  for(i in  1:ncol(data_miss.imp)){
+    data_miss.imp_a<-rbind(data_miss.imp_a,data_miss.imp[,i])
+  }
+  rownames(data_miss.imp_a)<-data_miss.imp_a$Name
+  ##load("imputed_methylation_snp_horvath_beta.RData") ###contains the 77 + the 276 missing CpGs
+  imputed_methylation_snp_horvath_beta_c<-imputed_methylation_snp_horvath_beta
+  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[c(data_miss.imp_a$Name,data_miss.imp_a$cpgstoreplace),]
+  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[,colnames(imputed_methylation_snp_beta)]
+  for(i in rownames(data_miss.imp_a)){
+    j<-data_miss.imp_a[i,"cpgstoreplace"]
+    imputed_methylation_snp_horvath_beta[i,]<-imputed_methylation_snp_horvath_beta[j,]
     print(i)
+    print(j)
+  }
+  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[rownames(data_miss.imp_a),]
+  snpnames_h<-rownames(imputed_methylation_snp_beta)[rownames(imputed_methylation_snp_beta)%in%coefHorvath$CpGmarker]
+  c<-rbind(imputed_methylation_snp_horvath_beta,imputed_methylation_snp_beta[snpnames_h,])
+}
+replace_missings_CpGs(imputed_methylation_snp_beta_small_t,missing_CpGs[[1]],missing_CpGs[[2]])
+
+}
+}
+
+#' replace_missings_CpGs
+#' replace missing CpGs values whithin single samples with their nearest neighbor CpGs values availble in the dataframe
+#' @param x a dataframe in which the missing CpGs values for a given clock should be replaced, containing the CpGs in rows and Sample in columns.
+#' @param y a dataframe where the CpGs to replace the missing ones for a given clock should be found, containing the CpGs in rows and Sample in columns.
+#' @returns a data frame containing CpGs
+
+replace_missings_CpGs<-function(data,x){
+
+    target<-which(x %in% colnames(data))
+    vec <- vec[!is.na(vec)]
+    for(i in target){
+
+    }
+    vec <- vec[!is.na(vec)]  # remove NAs if any
+    closest_index <- which.min(abs(vec - target))
+
+    missing_CpGs[[1]]
+
+  for (i in 1:length(x$Name)) {
     z<-x$Name[-i]
-    y_s<-y[!y$Name%in%z,]
     pos<-which(y_s$Name==x$Name[i])
     if(pos==1){
 
@@ -73,61 +141,65 @@ replace_missings_CpGs<-function(x,y){
 
 }
 
-replace_missings_CpGs_example<-function(x, present_CpGs,missing_CpGs){
-  data850<- read.csv("data850.csv")
-  ata850<- read.csv("data450.csv")
-  data<-data.frame(rbind(cbind("chr"=data850$chr,"pos"=data850$pos,"strand"=data850$strand,"Name"=data850$Name),
-                         cbind("chr"=data450$chr,"pos"=data450$pos,"strand"=data450$strand,"Name"=data450$Name)))##a liitle bit more than the 850
-  data<-data[!duplicated(data$Name),]
-  rownames(data)<-data$Name
-  data<-data.frame(data[order(data[,"chr"],data[,"strand"],data[,"pos"]),])
-  data$cpgstoreplace<-NA
-  data$dist<-NA
-  data_miss <- data[missing_CpGs,]
-  data <- split(data, f=list(data$chr, data$strand))
-  data_miss <- split(data_miss, f=list(data_miss$chr, data_miss$strand))
-  v<-c()
-  for(i in 1:length(data_miss)){
-    if(nrow(data_miss[[i]])==0){
-      print(names(data_miss)[i])
-      v<-c(v,names(data_miss)[i])
-    }
-  }
-  data_miss[[v]]<-NULL
-  v<-names(data)[!(names(data) %in% names(data_miss))]
-  data[v]<-NULL
-  data_miss.imp<-mcmapply(replace_missings_CpGs,data_miss,data,mc.cores=4)
-  data_miss.imp_a<-data.frame(matrix(nrow=0,ncol=6))
-  colnames(data_miss.imp_a)<-c("chr", "pos","strand", "Name", "cpgstoreplace","dist")
-  for(i in  1:ncol(data_miss.imp)){
-    data_miss.imp_a<-rbind(data_miss.imp_a,data_miss.imp[,i])
-  }
-  rownames(data_miss.imp_a)<-data_miss.imp_a$Name
-  ##load("imputed_methylation_snp_horvath_beta.RData") ###contains the 77 + the 276 missing CpGs
-  imputed_methylation_snp_horvath_beta_c<-imputed_methylation_snp_horvath_beta
-  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[c(data_miss.imp_a$Name,data_miss.imp_a$cpgstoreplace),]
-  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[,colnames(imputed_methylation_snp_beta)]
-  for(i in rownames(data_miss.imp_a)){
-    j<-data_miss.imp_a[i,"cpgstoreplace"]
-    imputed_methylation_snp_horvath_beta[i,]<-imputed_methylation_snp_horvath_beta[j,]
-    print(i)
-    print(j)
-    }
-  imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[rownames(data_miss.imp_a),]
-  snpnames_h<-rownames(imputed_methylation_snp_beta)[rownames(imputed_methylation_snp_beta)%in%coefHorvath$CpGmarker]
-  c<-rbind(imputed_methylation_snp_horvath_beta,imputed_methylation_snp_beta[snpnames_h,])
-    }
-
-replace_missings_CpGs(imputed_methylation_snp_beta_small_t,missing_CpGs[[1]],missing_CpGs[[2]])
+x<-replace_missings_CpGs(data,missing_CpGs)
+# replace_missings_CpGs_example<-function(data,missing_CpGs){
 
 
 
+#   data850<- read.csv("data850.csv")
+#   ata850<- read.csv("data450.csv")
+#   data<-data.frame(rbind(cbind("chr"=data850$chr,"pos"=data850$pos,"strand"=data850$strand,"Name"=data850$Name),
+#                          cbind("chr"=data450$chr,"pos"=data450$pos,"strand"=data450$strand,"Name"=data450$Name)))##a liitle bit more than the 850
+#   data<-data[!duplicated(data$Name),]
+#   rownames(data)<-data$Name
+#   data<-data.frame(data[order(data[,"chr"],data[,"strand"],data[,"pos"]),])
+#   data$cpgstoreplace<-NA
+#   data$dist<-NA
+#   data_miss <- data[missing_CpGs,]
+#   data <- split(data, f=list(data$chr, data$strand))
+#   data_miss <- split(data_miss, f=list(data_miss$chr, data_miss$strand))
+#   v<-c()
+#   for(i in 1:length(data_miss)){
+#     if(nrow(data_miss[[i]])==0){
+#       print(names(data_miss)[i])
+#       v<-c(v,names(data_miss)[i])
+#     }
+#   }
+#   data_miss[[v]]<-NULL
+#   v<-names(data)[!(names(data) %in% names(data_miss))]
+#   data[v]<-NULL
+#   data_miss.imp<-mcmapply(replace_missings_CpGs,data_miss,data,mc.cores=4)
+#   data_miss.imp_a<-data.frame(matrix(nrow=0,ncol=6))
+#   colnames(data_miss.imp_a)<-c("chr", "pos","strand", "Name", "cpgstoreplace","dist")
+#   for(i in  1:ncol(data_miss.imp)){
+#     data_miss.imp_a<-rbind(data_miss.imp_a,data_miss.imp[,i])
+#   }
+#   rownames(data_miss.imp_a)<-data_miss.imp_a$Name
+#   ##load("imputed_methylation_snp_horvath_beta.RData") ###contains the 77 + the 276 missing CpGs
+#   imputed_methylation_snp_horvath_beta_c<-imputed_methylation_snp_horvath_beta
+#   imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[c(data_miss.imp_a$Name,data_miss.imp_a$cpgstoreplace),]
+#   imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[,colnames(imputed_methylation_snp_beta)]
+#   for(i in rownames(data_miss.imp_a)){
+#     j<-data_miss.imp_a[i,"cpgstoreplace"]
+#     imputed_methylation_snp_horvath_beta[i,]<-imputed_methylation_snp_horvath_beta[j,]
+#     print(i)
+#     print(j)
+#     }
+#   imputed_methylation_snp_horvath_beta<-imputed_methylation_snp_horvath_beta[rownames(data_miss.imp_a),]
+#   snpnames_h<-rownames(imputed_methylation_snp_beta)[rownames(imputed_methylation_snp_beta)%in%coefHorvath$CpGmarker]
+#   c<-rbind(imputed_methylation_snp_horvath_beta,imputed_methylation_snp_beta[snpnames_h,])
+#     }
+#
+# replace_missings_CpGs(imputed_methylation_snp_beta_small_t,missing_CpGs[[1]],missing_CpGs[[2]])
+#
+#
 
+#IlluminaHumanMethylation450kanno.ilmn12.hg19"
 #library(IlluminaHumanMethylationEPICanno.ilm10b4.hg19)
 
-#library(AnnotationHub)
+# library(AnnotationHub)
 # library(minfi)
-#library(Biobase)
+# library(Biobase)
 # #library(tibble)
 # library(ggpmisc)
 # library(GEOquery)
@@ -140,7 +212,7 @@ replace_missings_CpGs(imputed_methylation_snp_beta_small_t,missing_CpGs[[1]],mis
 # library(caret)
 # library(readxl)
 # library(cowplot)
-#
+
 # library("IlluminaHumanMethylation450kanno.ilmn12.hg19")
 #
 #
