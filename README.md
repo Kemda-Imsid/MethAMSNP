@@ -25,10 +25,13 @@ install_github("https://github.com/Kemda-Imsid/MethAMSNP.git")
 
 ###You can download the .zip data from github  
 
-#Local installation with base 
- install.packages("/Yourpath/MethAMSNP.zip",  repos = NULL, type = 'source')
+#Local installation with base
+
+install.packages("/Yourpath/MethAMSNP.zip",  repos = NULL, type = 'source')
+
 # Local installation with devtools
- library(devtools)
+
+library(devtools)
 devtools::install("/Yourpath/MethAMSNP.zip")
 
 ```
@@ -60,37 +63,5 @@ data<-replace_missings_CpGs(data,missing_CpGs)
 
 ```
 
-
-
-#Eliminate missing values 
-
-eliminateMissingsvalues<-eliminateMissingsMulti(blood_download)
- 
-### Generate complete cases subsamples, introduce missing values and impute these missing values with OSMI, impute.knn and methyLimp and save them in results directory
-
-OSMI::impute_missing_CpGs(blood_download,c(400, 1000,3000,5000 ),c(1,2,5,10,50, 100, 500, 1000, 1500),10,1)
- 
-### Visualize the results from the imputation
- ###perfomance_check read the results from the results directory and makes ready to visualize
- 
-OSMI::perfomance_check(c(400, 1000,3000,5000 ),c(1,2,5,10,50, 100, 500, 1000, 1500),10) 
- 
-###perfomance_plot visualize the results
- 
-OSMI::perfomance_plot(tab_mean = tab_mean[[1]]) ##plot the rmse
- 
-OSMI::perfomance_plot(tab_mean = tab_mean[[2]]) ##plot the mae
-
-OSMI::perfomance_plot(tab_mean = tab_mean[[1]]) ##plot the time
- 
-
-### Perfomance of OSMI is depending of the density of the micro array
- 
-result<-OSMI::OSMI_on_array_density(blood_download,1)
- 
-### Impact of OSMI compare to impute.knn and methyLimp on Hovath´s clock
- 
-result<-Impact_of_imputation_on_horvath_clock(blood_download, sample_blood_download, coefHorvath)
- 
 
 
