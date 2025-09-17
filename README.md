@@ -56,6 +56,10 @@ missing_CpGs<-find_missing_CpGs(imputed_methylation_snp_beta_s,"Horvath")
 
 data<-add_missing_CpGs(imputed_methylation_snp_beta_s,missing_CpGs[[1]])
 
+#find_nearest_CpGs A function to identify the nearest neighboring CpG site (based on genomic position) for a missing CpG in a given "clock" (a set of CpG markers),
+
+data<-find_nearest_CpGs<- function(data, imputed_methylation_snp_beta_s,missing_CpGs[[1]])
+
 #replace_missings_CpG: A function to impute missing methylation values using neighboring CpG positions
 #Specifically, it replaces missing values using the methylation value of the nearest neighboring CpG site on the same chromosome and strand, based on genomic position. This preserves local methylation patterns and is particularly useful in analyses where spatial continuity of methylation is important, such as regional methylation profiling or epigenetic landscape reconstruction.
 

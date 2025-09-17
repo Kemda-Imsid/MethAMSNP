@@ -1,7 +1,7 @@
 #' find_missing_CpGs
 #' Find the missing CpGs names for a given data set for a given clock.
 #'
-#' @param data_miss a dataframe containing the CpGs in columns and Sample in rows. the dataframe in wich the missing CpGs be imputed.
+#' @param data_miss a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
 #' @param clock a clock names amount these, "coefBLUP", "coefEN", "coefHannum", "coefHorvath", "coefLevine", "coefPedBE", "coefSkin", "coefTL", "coefWu")
 #'
 #' @returns A list with two elements:
@@ -12,7 +12,7 @@
 #' @export
 
 find_missing_CpGs<-function(data_miss,clock){
-  data_miss<-data.frame(t(data_miss[1:3,]))
+  data_miss<-data_miss[1:3,]
   data_miss<-data.frame(cbind("ProbeID"=rownames(data_miss),data_miss))
   data_miss[,-1]<-lapply(data_miss[,-1],as.numeric)
   missing_CpGs <- methylclock::checkClocks(data_miss,clocks=clock,localHub=TRUE)
@@ -30,45 +30,45 @@ find_missing_CpGs<-function(data_miss,clock){
 
 #' add_missing_CpGs
 #' the function crates some empty value columns to the dataframe for the missings CpGs
-#' @param data a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
+#' @param dat a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
 #' @param x missing CpGs names
 #'
 #' @returns a data frame containing empty columns for the missing CpGs names
 #' @export
 
-add_missing_CpGs<-function(data, x){
+add_missing_CpGs<-function(dat, x){
     # Create a list of empty columns (NA values)
     x <- data.frame(setNames(
-      replicate(length(x), rep(NA, nrow(data)), simplify = FALSE), x))
+      replicate(length(x), rep(NA, nrow(dat)), simplify = FALSE), x))
     # Bind the empty columns to the original data frame
-    data <- cbind(x,data)
-    return(data)
+    dat <- cbind(x,dat)
+    return(dat)
   }
 
-#data<-add_missing_CpGs(imputed_methylation_snp_beta_s,missing_CpGs[[1]])
+#dat<-add_missing_CpGs(imputed_methylation_snp_beta_s,missing_CpGs[[1]])
 
 
 
 #' Title
 #'
-#' @param data a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
+#' @param dat a dataframe containing the CpGs in rows and Sample in columns. the dataframe in wich the missing CpGs be imputed.
 #' @param x missing CpGs names
 #'
 #' @returns a data frame containing CpGs and they nearest neighbours
 #' @export
 #'
-find_nearest_CpGs<- function(data, x) {
+find_nearest_CpGs<- function(dat, x) {
   # Ensure required columns exist
-  if (!all(c("chr", "pos", "strand", "Name") %in% colnames(data))) {
+  if (!all(c("chr", "pos", "strand", "Name") %in% colnames(dat))) {
     stop("Data must have columns: chr, pos, strand, Name")
   }
-  data$pos<-as.numeric(data$pos)
+  dat$pos<-as.numeric(dat$pos)
   # Remove rows with NA positions
-  data <- data[!is.na(data$pos), ]
-  data<-data[order(data$pos),]
-  # Split data into available and missing CpGs
-  available <- data[!data$Name %in% x, ]
-  missing   <- data[data$Name %in% x, ]
+  dat <- dat[!is.na(dat$pos), ]
+  dat<-dat[order(dat$pos),]
+  # Split dat into available and missing CpGs
+  available <- dat[!dat$Name %in% x, ]
+  missing   <- dat[dat$Name %in% x, ]
 
   # Output structure
   result <- data.frame(
@@ -90,7 +90,8 @@ find_nearest_CpGs<- function(data, x) {
 
     # Find closest by genomic position
     distances <- abs(as.numeric(subset$pos) - as.numeric(m$pos))
-    closest_cpg <- subset[which.min(distances),]
+    closest_idx<-which.min(distances)
+    closest_cpg <- subset[closest_idx,]
 
     result <- rbind(result, data.frame(
       chr = m$chr,
@@ -109,45 +110,45 @@ find_nearest_CpGs<- function(data, x) {
 
 #' replace_missings_CpGs
 #' replace missing CpGs values whithin single samples with their nearest neighbor CpGs values availble in the dataframe
-#' @param data a dataframe in which the missing CpGs values for a given clock should be replaced, containing the CpGs in rows and Sample in columns.
+#' @param dat a dataframe in which the missing CpGs values for a given clock should be replaced, containing the CpGs in rows and Sample in columns.
 #' @param x a vector containing the missing CpGs to replace the missing ones for a given clock
 #' @returns a data frame containing CpGs
 #' @export
 
 
-replace_missings_CpGs<-function(data,x){
+replace_missings_CpGs<-function(dat,x){
 
   ref450<- read.csv("Data/ref450.csv")
   ref850<- read.csv("Data/ref850.csv")
   df_annotation<-data.frame(rbind(cbind("chr"=ref850$chr,"pos"=ref850$pos,"strand"=ref850$strand,"Name"=ref850$Name),
                                   cbind("chr"=ref450$chr,"pos"=ref450$pos,"strand"=ref450$strand,"Name"=ref450$Name)))##a little bit more than the 850
   df_annotation<-df_annotation[!duplicated(df_annotation$Name),]
-  data_split<-data.frame(cbind("chr" =  df_annotation$chr[match(colnames(data), df_annotation$Name)],
-                         "pos" = as.numeric(df_annotation$pos[match(colnames(data), df_annotation$Name)]),
-                         "strand" =  df_annotation$strand[match(colnames(data), df_annotation$Name)],"Name"=colnames(data)))
-  # data<-data.frame(data[order(data[,"chr"],data[,"strand"],data[,"pos"]),])
-  data_split <- split(data_split, f=list(data_split$chr, data_split$strand))
+  dat_split<-data.frame(cbind("chr" =  df_annotation$chr[match(colnames(dat), df_annotation$Name)],
+                         "pos" = as.numeric(df_annotation$pos[match(colnames(dat), df_annotation$Name)]),
+                         "strand" =  df_annotation$strand[match(colnames(dat), df_annotation$Name)],"Name"=colnames(dat)))
+  # dat<-data.frame(dat[order(dat[,"chr"],dat[,"strand"],dat[,"pos"]),])
+  dat_split <- split(dat_split, f=list(dat_split$chr, dat_split$strand))
   v<-c()
-  for(i in 1:length(data_split)){
-    if(nrow(data_split[[i]])==0){
-      v<-c(v,names(data_split)[i])
+  for(i in 1:length(dat_split)){
+    if(nrow(dat_split[[i]])==0){
+      v<-c(v,names(dat_split)[i])
     }
   }
   if(length(v)!=0){
-    data_split[[v]]<-NULL
+    dat_split[[v]]<-NULL
   }
   # find nearest neighbors for each element of the list
-  nearest_CpGs <- mclapply(data_split, function(item) {
+  nearest_CpGs <- mclapply(dat_split, function(item) {
     find_nearest_CpGs(item, x)
   }, mc.cores = 4)
   # Combine results into a single data frame
   nearest_CpGs <- do.call(rbind, nearest_CpGs)
   for(i in 1:nrow(nearest_CpGs)){
-    data[,nearest_CpGs[i,"Name"]]<-data[,nearest_CpGs[i,"cpgstoreplace"]]
+    dat[,nearest_CpGs[i,"Name"]]<-dat[,nearest_CpGs[i,"cpgstoreplace"]]
   }
-  return(list( data,nearest_CpGs))
+  return(list( dat,nearest_CpGs))
 }
 
-data<-replace_missings_CpGs(data,x)
+#dat<-replace_missings_CpGs(dat,missing_CpGs[[1]])
 
 
