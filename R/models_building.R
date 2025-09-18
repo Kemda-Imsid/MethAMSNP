@@ -1,13 +1,22 @@
 
+#' Title
+#'
+#' @param dat
+#' @param clocks
+#'
+#' @returns
+#' @export
+
 DNA_age<-function(dat,clocks){
 
-  Chroage<-data.frame(dat["Chroage",])
+  Chroage<-data.frame(t(dat_c["Chroage",]))
   dat <- dat[rownames(dat) != "Chroage", ]
   dat<-cbind("ProbeID"=rownames(dat),dat)
   dat[,-1]<-lapply(dat[,-1],as.numeric)
   dat_age<-data.frame(DNAmAge(dat,clocks = clocks))
-  dat_age<-data.frame(cbind("Chroage"=Chroage,"Bioage"=as.numeric(dat_age$Horvath)))
-
+  rownames(dat_age)<-dat_age$id
+  dat_age<-dat_age[rownames(Chroage),]
+  dat_age$Chroage<-Chroage[,1]
   return(dat_age)
 }
 
