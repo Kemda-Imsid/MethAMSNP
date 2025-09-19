@@ -1,65 +1,82 @@
 
-#' Title
+#' DNAm age estimation giving a DNA methylation clock.
 #'
-#' @param dat
-#' @param clocks
-#'
-#' @returns
+#' @param dat data.frame with samples in columns and CpGs in rows. A row called "Chroage" which contains the chronological age infos.
+#' @param clocks the methods used for estimating DNAmAge. Currrently "Horvath", "Hannum",
+#' "Levine", "BNN", "skinHorvath", "PedBE", "Wu", "TL", "BLUP", "EN" and "all" are available.
+#' @returns a data.frame with the chronological and estimated age in colums, samples in rows.
 #' @export
 
 DNA_age<-function(dat,clocks){
 
-  Chroage<-data.frame(t(dat_c["Chroage",]))
+  Chroage<-data.frame(t(dat["Chroage",]))
   dat <- dat[rownames(dat) != "Chroage", ]
   dat<-cbind("ProbeID"=rownames(dat),dat)
   dat[,-1]<-lapply(dat[,-1],as.numeric)
   dat_age<-data.frame(DNAmAge(dat,clocks = clocks))
   rownames(dat_age)<-dat_age$id
   dat_age<-dat_age[rownames(Chroage),]
-  dat_age$Chroage<-Chroage[,1]
+  dat_age<-data.frame(cbind("Chroage"=as.numeric(Chroage[,1]),"Bioage"=as.numeric(dat_age[,-1])))
   return(dat_age)
 }
 
+DNA_age_metrics<-function(dat){
 
-# p<- ggplot(age_snp_h_r, aes(Chroage,Bioage))+
-#   geom_point(size=0.01) +
-#   geom_abline(linewidth = 0.2)+
-#   #geom_smooth(method=lm, linewidth= 0.2,,se=FALSE,
-#   #  color="blue3")+
-#   theme(text = element_text(size = 10, face = "bold"),legend.position = "none",legend.text=element_text(size=10)
-#   )+
-#   xlim(0,100)+
-#   ylim(0,100)+
-#   xlab("Chronological age (years)")+
-#   ylab("Biological age (years)")
-#
-#
-# png(filename = "snp_horvath_age.png", width = 90, height = 90,units = "mm", res=300)
-# cowplot::plot_grid(p,ncol =1,nrow=1,label_colour ="Blue3", label_x = '0', label_y = '1')
-# dev.off()
-#
-#
-#
-# age_snp_h_r$diff<-age_snp_h_r$Bioage-age_snp_h_r$Chroage
-# min(age_snp_h_r$diff)
-# median(age_snp_h_r$diff)
-# mean(age_snp_h_r$diff)
-# max(age_snp_h_r$diff)
-# sd(age_snp_h_r$diff)
-# rmse(age_snp_h_r$Chroage,age_snp_h_r$Bioage)
-# mae(age_snp_h_r$Chroage,age_snp_h_r$Bioage)
-# mad(age_snp_h_r$Chroage,age_snp_h_r$Bioage)
-#
-# # [1] -11.04272
-# # [1] 9.732195
-# # [1] 11.27577
-# # [1] 50.27984
-# # [1] 12.68506
-# # [1] 16.97151
-# # [1] 13.1813
-# # [1] 14.60411
-#
-#
+  dat$diff<-dat$Bioage-dat$Chroage
+  dat<- data.frame("min_diff"=min(dat$diff),"median_diff"=median(dat$diff),"mean_diff"=mean(dat$diff),
+                  "max_diff"=max(dat$diff), "sd_diff"=sd(dat$diff), "rmse"=rmse(dat$Chroage,dat$Bioage),
+                   "mae"=mae(dat$Chroage,dat$Bioage),"mad"=mad(dat$Chroage,dat$Bioage))
+ return(dat)
+}
+
+
+DNA_age_plot <- function(dat, target_col) {
+  plot_list <- list()
+
+  # Check if target column exists
+  if (!(target_col %in% names(dat))) {
+    stop("Target column not found in data frame.")
+  }
+
+  # Only proceed if target is numeric
+  if (!is.numeric(dat[[target_col]])) {
+    stop("Target column must be numeric for scatter plots.")
+  }
+
+  # Loop through other columns
+  for (col_name in names(dat)) {
+    # Skip the target column itself
+    if (col_name == target_col) next
+
+    # Only plot if the other column is numeric
+    if (is.numeric(dat[[col_name]])) {
+      p <-  ggplot(dat, aes(x = .data[[target_col]], y = .data[[col_name]])) +
+        geom_point(size=0.01) +
+        geom_abline(linewidth = 0.2)+
+        #geom_smooth(method=lm, linewidth= 0.2,,se=FALSE,
+        #  color="blue3")+
+        theme(text = element_text(size = 10, face = "bold"),legend.position = "none",legend.text=element_text(size=10)
+        )+
+        xlim(0,100)+
+        ylim(0,100)+
+        xlab("Chronological age (years)")+
+        ylab("Biological age (years)")
+
+      # Add to list
+      plot_list[[col_name]] <- p
+    }
+  }
+
+  return(plot_list)
+}
+
+
+
+
+
+
+
+
 # #####
 # set.seed(23060830)
 # x<-rep(1:1498)
@@ -74,30 +91,30 @@ DNA_age<-function(dat,clocks){
 #
 # ######
 #
-# E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha){
-#
-#   #perform k-fold cross-validation to find optimal lambda value
-#   cv_model <- cv.glmnet(x_train_set, y_train_set, alpha = alpha,foldid=tmp)
-#
-#   #find optimal lambda value that minimizes test MSE
-#   best_lambda.se <- cv_model$lambda.1se
-#   best_lambda.min <- cv_model$lambda.min
-#   best_model.min <- glmnet(x_train_set, y_train_set,alpha = alpha, lambda = best_lambda.min)
-#   best_model.se <- glmnet(x_train_set, y_train_set,alpha = alpha, lambda = best_lambda.se)
-#   best_model.min.coefs<-as.matrix(coef(best_model.min))
-#   best_model.se.coefs<-as.matrix(coef(best_model.se))
-#
-#   best_model.se.coefs<-names(best_model.se.coefs[best_model.se.coefs[,1]!=0,])
-#   best_model.min.coefs<-names(best_model.min.coefs[best_model.min.coefs[,1]!=0,])
-#
-#   y_predicted.min <- predict(best_model.min, s = best_lambda.min, newx =  x_test_set)
-#   y_predicted.se <- predict(best_model.se, s = best_lambda.se, newx =  x_test_set)
-#   res.min<-data.frame(cbind("Bioage"=as.numeric(y_predicted.min),"Chroage"=as.numeric(y_test_set)))
-#   res.se<-data.frame(cbind("Bioage"=as.numeric(y_predicted.se),"Chroage"=as.numeric(y_test_set)))
-#   return(list(res.min,res.se,best_model.min,best_model.se,cv_model,best_model.min.coefs,best_model.se.coefs))
-# }
-#
-#
+E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha){
+
+  #perform k-fold cross-validation to find optimal lambda value
+  cv_model <- cv.glmnet(x_train_set, y_train_set, alpha = alpha,foldid=tmp)
+
+  #find optimal lambda value that minimizes test MSE
+  best_lambda.se <- cv_model$lambda.1se
+  best_lambda.min <- cv_model$lambda.min
+  best_model.min <- glmnet(x_train_set, y_train_set,alpha = alpha, lambda = best_lambda.min)
+  best_model.se <- glmnet(x_train_set, y_train_set,alpha = alpha, lambda = best_lambda.se)
+  best_model.min.coefs<-as.matrix(coef(best_model.min))
+  best_model.se.coefs<-as.matrix(coef(best_model.se))
+
+  best_model.se.coefs<-names(best_model.se.coefs[best_model.se.coefs[,1]!=0,])
+  best_model.min.coefs<-names(best_model.min.coefs[best_model.min.coefs[,1]!=0,])
+
+  y_predicted.min <- predict(best_model.min, s = best_lambda.min, newx =  x_test_set)
+  y_predicted.se <- predict(best_model.se, s = best_lambda.se, newx =  x_test_set)
+  res.min<-data.frame(cbind("Bioage"=as.numeric(y_predicted.min),"Chroage"=as.numeric(y_test_set)))
+  res.se<-data.frame(cbind("Bioage"=as.numeric(y_predicted.se),"Chroage"=as.numeric(y_test_set)))
+  return(list(res.min,res.se,best_model.min,best_model.se,cv_model,best_model.min.coefs,best_model.se.coefs))
+}
+
+
 # #blood_download_72<-data.frame(t(blood_download_72)) ## CpGs should be in columns
 #
 # blood_download_72<-cbind("age"=as.numeric(sample_blood$age),blood_download_72)###1872x72219
