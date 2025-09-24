@@ -73,15 +73,6 @@ DNA_age_plot <- function(dat, target_col) {
 
 
 
-
-
-
-
-#####
-
-##error in x[!which, , drop = FALSE] :
-##(subscript) logical subscript too long => adjust the number of samples
-
 ######
 
 E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
@@ -106,6 +97,7 @@ E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
   res.se<-data.frame(cbind("Bioage"=as.numeric(y_predicted.se),"Chroage"=as.numeric(y_test_set)))
   return(list(res.min,res.se,best_model.min,best_model.se,cv_model,best_model.min.coefs,best_model.se.coefs))
 }
+
 
 
 # # Measure: Mean-Squared Error

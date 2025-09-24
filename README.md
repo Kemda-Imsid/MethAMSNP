@@ -95,6 +95,12 @@ dev.off()
 
 ##Task 2: Model building using a data set with measured methylation values
 
+dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1)
+
+png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
+plot(dat_test_age[[5]])
+dev.off()
+
 ```
 
 
