@@ -40,12 +40,17 @@ devtools::install("/Yourpath/MethAMSNP.zip")
 
 ``` r
 library("MethAMSNP")
- 
+
+
+
 #read the documentation
  
 ?MethAMSNP::impute_missing_CpGs
- 
-### basic example code
+```
+``` r
+## Missing values imputation
+## basic example code
+
 #find_missing_CpGs: A function to identify missing CpG sites required by a specific epigenetic clock
 #This function compares the CpG sites present in a methylation dataset against those required by a specific epigenetic clock model (e.g., Horvath, Hannum, PhenoAge) and returns the names of CpGs that are missing. It is useful for quality control or preprocessing before applying clock models that rely on a defined set of CpG predictors.
 
@@ -58,14 +63,43 @@ data<-add_missing_CpGs(imputed_methylation_snp_beta_s,missing_CpGs[[1]])
 
 #find_nearest_CpGs A function to identify the nearest neighboring CpG site (based on genomic position) for a missing CpG in a given "clock" (a set of CpG markers),
 
-data<-find_nearest_CpGs<- function(data, imputed_methylation_snp_beta_s,missing_CpGs[[1]])
+data<-find_nearest_CpGs(data, imputed_methylation_snp_beta_s,missing_CpGs[[1]])
 
 #replace_missings_CpG: A function to impute missing methylation values using neighboring CpG positions
 #Specifically, it replaces missing values using the methylation value of the nearest neighboring CpG site on the same chromosome and strand, based on genomic position. This preserves local methylation patterns and is particularly useful in analyses where spatial continuity of methylation is important, such as regional methylation profiling or epigenetic landscape reconstruction.
 
 data<-replace_missings_CpGs(data,missing_CpGs)
+```
+``` r
+## Modeling 
+
+#Task 1: Horvath age estimation
+
+# DNA_age estimate DNA methylation age using a methylation clock.
+
+dat <- DNA_age(dat, c("Horvath"))
+
+#The DNA_age_metrics function computes metrics to evaluate the accuracy of DNA methylation age estimates
+
+DNA_age_metrics<-DNA_age_metrics(dat)
+
+#The DNA_age_plot function generates a scatter plot comparing chronological age with DNA methylation-estimated biological age. 
+
+DNA_age_plot<-DNA_age_plot(dat,"Chroage")
+
+###Save the plot
+png(filename = "snp_horvath_age.png", width = 90, height = 90,units = "mm", res=300)
+cowplot::plot_grid(DNA_age_plot[[1]],ncol =1,nrow=1,label_colour ="Blue3", label_x = '0', label_y = '1')
+dev.off()
+
+
+##Task 2: Model building using a data set with measured methylation values
 
 ```
+
+
+
+
 
 
 

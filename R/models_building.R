@@ -77,24 +77,17 @@ DNA_age_plot <- function(dat, target_col) {
 
 
 
-# #####
-# set.seed(23060830)
-# x<-rep(1:1498)
-# nfold<-createFolds(1:1498, k = 10, list = TRUE, returnTrain = FALSE)
-# tmp<-rep(1:1498)
-# for(k in 1:10){tmp[nfold[[k]]]<-k}
-# blood_download<-blood_download[,rownames(sample_blood)]
-# blood_download_72<-data.frame(t(blood_download[namescpgsnpblood,]))##blood_download_72<-data.frame(blood_download[,namescpgsnpblood])
-#
-# ##error in x[!which, , drop = FALSE] :
-# ##(subscript) logical subscript too long => adjust the number of samples
-#
-# ######
-#
-E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha){
+#####
+
+##error in x[!which, , drop = FALSE] :
+##(subscript) logical subscript too long => adjust the number of samples
+
+######
+
+E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
 
   #perform k-fold cross-validation to find optimal lambda value
-  cv_model <- cv.glmnet(x_train_set, y_train_set, alpha = alpha,foldid=tmp)
+  cv_model <- cv.glmnet(x_train_set, y_train_set, alpha = alpha,foldid=foldid)
 
   #find optimal lambda value that minimizes test MSE
   best_lambda.se <- cv_model$lambda.1se
@@ -115,28 +108,6 @@ E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha){
 }
 
 
-# #blood_download_72<-data.frame(t(blood_download_72)) ## CpGs should be in columns
-#
-# blood_download_72<-cbind("age"=as.numeric(sample_blood$age),blood_download_72)###1872x72219
-# set.seed(23060830)
-# train.names<-sample(rownames(blood_download_72), 1498)
-# train_set<-blood_download_72[train.names,]
-# test_set<-blood_download_72[!rownames(blood_download_72)%in%train.names,]
-#
-# y_train_set<-train_set[,colnames(train_set)=="age"]
-# x_train_set<-as.matrix(train_set[,!colnames(train_set)=="age"])
-#
-#
-# y_test_set<-test_set[,colnames(test_set)=="age"]
-# x_test_set<-as.matrix(test_set[,!colnames(test_set)=="age"])
-#
-# res_72k<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1)
-# png(filename = "blood_download_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
-# plot(res_72k[[5]])
-# dev.off()
-#
-#
-#
 # # Measure: Mean-Squared Error
 # #
 # # Lambda Index Measure    SE Nonzero
