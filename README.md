@@ -101,6 +101,10 @@ png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height =
 plot(dat_test_age[[5]])
 dev.off()
 
+#retrieve the metrics for lamda se
+
+DNA_age_metrics_dat_test<-DNA_age_metrics(dat_test_age[[2]])
+
 ```
 
 

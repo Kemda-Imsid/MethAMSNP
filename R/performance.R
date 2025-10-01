@@ -4,36 +4,40 @@
 
 ##Make data ready to impute age
 
-#dat: imputed_methylation_snp_horvath_beta with CpGs in rows and sample in col
-#dat_test: measured methylation values with CpGs in columns and sample in rows
-#meta_dat: meta data of dat set dat containing chronological age informations
-#meta_dat_test: meta data of dat_test set dat containing chronological age informations
-#meta_dat<-read_xlsx("yourMetadata")
+# dat: imputed_methylation_snp_horvath_beta with CpGs in columns and sample in rows. Imputation driven by the life_adlut biobank
+# dat_test: measured blood methylation values with CpGs in columns and sample in rows. retrieved from the open source Ewas datahub (https://ngdc.cncb.ac.cn/ewas/datahub/download)
+# meta_dat: meta data of dat set dat containing chronological age informations
+# meta_dat_test: meta data of dat_test set dat containing chronological age informations
+# meta_dat<-read_xlsx("yourMetadata")
 
 ##prepare dat data set
 
-sum(colnames(dat)%in%meta_dat$SIC)
-colnames(dat)<-gsub("X","",colnames(dat))
-meta_dat<-meta_dat[meta_dat$SIC%in%colnames(dat),]
-dat<-dat[,meta_dat$SIC]
-dat["Chroage",]<-meta_dat$ADULT_PROB_AGE
-dat_test<-data.frame(t(dat_test[c("Chroage",namescpgsnpblood),])) ##common names to both, dat and dat_test
+sum(rownames(dat)%in%meta_dat$SIC)
+rownames(dat)<-gsub("X","",rownames(dat))
+meta_dat<-meta_dat[meta_dat$SIC%in%rownames(dat),]
+dat<-dat[meta_dat$SIC,]
+dat[,"Chroage"]<-meta_dat$ADULT_PROB_AGE
 
 
 #prepare dat_test data set
 
+
 meta_dat_test<-meta_dat_test[!is.na(meta_dat_test$age),]
-dat_test<-dat_test[!(rownames(dat_test) %in% c("tissue", "sample_id")),meta_dat_test$sample_id]
-dat_test["Chroage",]<-meta_dat_test$age
+dat_test<-data.frame(t(dat_test[rownames(dat_test)%in%colnames(dat),meta_dat_test$sample_id])) ##common names to both, dat and dat_test
 dat_test[]<-lapply(dat_test,as.numeric)
+dat_test<- dat_test[, colMeans(is.na(dat_test)) <= 0.8]
+dat_test<-impute.knn(dat_test)$data
+dat_test<-cbind(dat_test,"Chroage"=meta_dat_test$age)
+
 
 ##Task 1: Horvath age estimation
 
+dat<-t(dat)
 dat <- DNA_age(dat, c("Horvath"))
 
 DNA_age_metrics<-DNA_age_metrics(dat)
 
-DNA_age_plot<-DNA_age_plot(dat,"Chroage")
+DNA_age_plot_horvath<-DNA_age_plot(dat,"Chroage")
 
 png(filename = "snp_horvath_age.png", width = 90, height = 90,units = "mm", res=300)
 cowplot::plot_grid(DNA_age_plot[[1]],ncol =1,nrow=1,label_colour ="Blue3", label_x = '0', label_y = '1')
@@ -48,7 +52,7 @@ x<-rep(1:round(nrow(dat_test)*0.8))
 nfold<-createFolds(1:round(nrow(dat_test)*0.8), k = 10, list = TRUE, returnTrain = FALSE)
 tmp<-1:round(nrow(dat_test)*0.8)
 for(k in 1:10){tmp[nfold[[k]]]<-k}
-train.names<-sample(rownames(dat_test), nrow(dat_test)*0.8)
+train.names<-sample(rownames(dat_test), round(nrow(dat_test)*0.8))
 train_set<-dat_test[train.names,]
 test_set<-dat_test[!rownames(dat_test)%in%train.names,]
 
@@ -59,11 +63,63 @@ x_train_set<-as.matrix(train_set[,!colnames(train_set)=="Chroage"])
 y_test_set<-test_set[,colnames(test_set)=="Chroage"]
 x_test_set<-as.matrix(test_set[,!colnames(test_set)=="Chroage"])
 
-dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1)
+dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1,tmp)
+
 
 png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
-plot(res_72k[[5]])
+plot(dat_test_age[[5]])
 dev.off()
 
 
+##retrieve the metrics for lamda se
 
+DNA_age_metrics_dat_test<-DNA_age_metrics(dat_test_age[[2]])
+
+## Scatter plot
+
+
+DNA_age_plot_dat_test<-DNA_age_plot(dat_test_age[[2]],"Chroage")
+
+
+## Test the model on snp data, data set dat
+
+dat_common_CpGs_with_dat_test<-data.frame(dat[,colnames(dat_test)])
+y_test_set<-dat_common_CpGs_with_dat_test[,colnames(dat_common_CpGs_with_dat_test)=="Chroage"]
+x_test_set<-as.matrix(dat_common_CpGs_with_dat_test[,!colnames(dat_common_CpGs_with_dat_test)=="Chroage"])
+
+y_predicted <- predict(dat_test_age[[4]],newx =  x_test_set)
+dat_age<-data.frame(cbind("Bioage"=as.numeric( y_predicted),"Chroage"=as.numeric(y_test_set)))
+
+DNA_age_plot_dat_dat_test<-DNA_age_plot(dat_age,"Chroage")
+
+y<-DNA_age_plot(dat_list,"Chroage")
+
+# ##Task 3: Model building using a data set with measured methylation values
+#
+# set.seed(23060830)
+#
+# x<-rep(1:round(nrow(dat_test)*0.8))
+# nfold<-createFolds(1:round(nrow(dat_test)*0.8), k = 10, list = TRUE, returnTrain = FALSE)
+# tmp<-1:round(nrow(dat_test)*0.8)
+# for(k in 1:10){tmp[nfold[[k]]]<-k}
+# train.names<-sample(rownames(dat_test), round(nrow(dat_test)*0.8))
+# train_set<-dat_test[train.names,]
+# test_set<-dat_test[!rownames(dat_test)%in%train.names,]
+#
+# y_train_set<-train_set[,colnames(train_set)=="Chroage"]
+# x_train_set<-as.matrix(train_set[,!colnames(train_set)=="Chroage"])
+#
+#
+# y_test_set<-test_set[,colnames(test_set)=="Chroage"]
+# x_test_set<-as.matrix(test_set[,!colnames(test_set)=="Chroage"])
+#
+# dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1,tmp)
+#
+#
+# png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
+# plot(dat_test_age[[5]])
+# dev.off()
+#
+# ##retrieve the metrics for lamda se
+#
+# DNA_age_metrics_dat_test<-DNA_age_metrics(dat_test_age[[2]])

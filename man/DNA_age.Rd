@@ -2,7 +2,7 @@
 % Please edit documentation in R/models_building.R
 \name{DNA_age}
 \alias{DNA_age}
-\title{DNAm age estimation giving a DNA methylation clock.}
+\title{DNA_age help in prepossessing of the data and estimates DNAm age giving a DNA methylation clock.}
 \usage{
 DNA_age(dat, clocks)
 }
@@ -16,5 +16,5 @@ DNA_age(dat, clocks)
 a data.frame with the chronological and estimated age in colums, samples in rows.
 }
 \description{
-DNAm age estimation giving a DNA methylation clock.
+DNA_age help in prepossessing of the data and estimates DNAm age giving a DNA methylation clock.
 }
