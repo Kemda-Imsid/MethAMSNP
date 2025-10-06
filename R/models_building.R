@@ -45,12 +45,11 @@ DNA_age_metrics<-function(dat){
 #' @returns a list of resulted plots
 #' @export
 
-DNA_age_plot <- function(dat_list, target_col) {
-  plot_list <- list()
+DNA_age_plot <- function(dat_list, target_col, plt_names=plt_names) {
+  plot_list <- vector("list", length(dat_list))
 
   # Loop through the data frame list
   for (dat in 1:length(dat_list)){
-    lab<<-names(dat_list[dat])
     # Check if target column exists
     if (!(target_col %in% colnames(dat_list[[dat]]))) {
       stop("Target column not found in data frame.")
@@ -60,35 +59,24 @@ DNA_age_plot <- function(dat_list, target_col) {
     if (!is.numeric(dat_list[[dat]][,target_col])) {
       stop("Target column must be numeric for scatter plots.")
     }
-  # Loop through other columns
-  # for (col_name in colnames(dat_list[[dat]])) {
-  #   # Skip the target column itself
-  #   if (col_name == target_col) next
 
     col_name <-colnames(dat_list[[dat]])[!colnames(dat_list[[dat]]) == target_col]
-    print(col_name)
+
     # Only plot if the other column is numeric
     if (is.numeric(dat_list[[dat]][,col_name])) {
-      print(lab)
-      p <-  ggplot(dat_list[[dat]], aes(x = .data[[target_col]], y = .data[[col_name]],label = lab)) +
+
+      plot_list[[dat]] <-  ggplot(dat_list[[dat]], aes(x = .data[[target_col]], y = .data[[col_name]])) +
         geom_point(size=0.01) +
         geom_abline(linewidth = 0.2)+
-        #geom_smooth(method=lm, linewidth= 0.2,,se=FALSE,
-        #  color="blue3")+
         theme(text = element_text(size = 10, face = "bold"),legend.position = "none",legend.text=element_text(size=10)
         )+
-        stat_regline_equation(label.y = 2,label.x =125,hjust = 1,parse = TRUE)+
+        #geom_text(x = 125, y = 1, label = plt_names[dat], hjust = 1, parse = TRUE)+
+        annotate("text", x = 125, y = 2, label = plt_names[dat], hjust = 1, parse = TRUE)+
         xlim(0,125)+
         ylim(0,125)+
         xlab("Chronological age (years)")+
         ylab("Biological age (years)")
-      # Add to list
-      plot_list[[lab]] <- p
     }
-  #
-  # }
-
-
   }
 
   return(plot_list)
@@ -141,6 +129,9 @@ E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
   res.se<-data.frame(cbind("Bioage"=as.numeric(y_predicted.se),"Chroage"=as.numeric(y_test_set)))
   return(list(res.min,res.se,best_model.min,best_model.se,cv_model,best_model.min.coefs,best_model.se.coefs))
 }
+
+
+
 
 
 

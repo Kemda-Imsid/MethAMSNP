@@ -93,7 +93,7 @@ cowplot::plot_grid(DNA_age_plot[[1]],ncol =1,nrow=1,label_colour ="Blue3", label
 dev.off()
 
 
-##Task 2: Model building using a data set with measured methylation values
+##Task 2 A: Model building using lasso on a data set with measured methylation values
 
 dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1)
 
@@ -101,9 +101,34 @@ png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height =
 plot(dat_test_age[[5]])
 dev.off()
 
-#retrieve the metrics for lamda se
+#retrieve the metrics for lambda se
 
 DNA_age_metrics_dat_test<-DNA_age_metrics(dat_test_age[[2]])
+
+# Scatter plot Chronological vs Biological age
+
+DNA_age_plot_dat_test<-DNA_age_plot(dat_test_age[[2]],"Chroage")
+
+# Test the model on snp data, data set dat
+
+y_predicted <- predict(dat_test_age[[4]],newx =  x_test_set)
+
+dat_age<-data.frame(cbind("Bioage"=as.numeric( y_predicted),"Chroage"=as.numeric(y_test_set)))
+
+DNA_age_plot_dat_dat_test<-DNA_age_plot(dat_age,"Chroage")
+
+##Task 2 B: Model building  using preselected CpGs identified through a generic algorithm and followed by fitting a simple linear regression model.
+
+
+
+
+#Task 3: Model building was performed using a dataset containing measured blood methylation values. The dataset was reduced to include only CpG sites common with the predicted values dataset, filtered for those with an absolute correlation coefficient (|r|) ≥ 0.8.
+
+dat_test_cor80_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1,tmp)
+
+##retrieve the metrics for lamda se
+
+DNA_age_metrics_dat_test_cor80_age<-DNA_age_metrics(dat_test_cor80_agee[[2]])
 
 ```
 
