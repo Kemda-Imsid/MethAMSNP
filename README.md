@@ -1,5 +1,5 @@
 ---
-# Ageing Model Helper
+# Age Prediction Modeling Helper
 ---
 
 
@@ -16,6 +16,27 @@ Direct DNA methylation profiling can be costly or unavailable in many studies. A
 ## Installation
 
 You can install the development version of somepackage from <https://github.com/Kemda-Imsid/MethAMSNP.git> with:
+
+``` r
+# Pre-requisites
+OSMi required these packages to be available prior insatllation
+ 
+if (!require("BiocManager", quietly = TRUE)) ##Version>3.19
+ 
+    install.packages("BiocManager")
+ 
+BiocManager::install("minfi")
+ 
+BiocManager::install("impute")
+ 
+BiocManager::install("methylclockData")
+ 
+BiocManager::install("methylclock")
+ 
+BiocManager::install("IlluminaHumanMethylation450kanno.ilmn12.hg19")
+ 
+devtools::install_github("pdilena/methyLImp")
+``` 
 
 ``` r
 # install.packages("devtools")
@@ -95,7 +116,10 @@ dev.off()
 
 ##Task 2 A: Model building using lasso on a data set with measured methylation values
 
-dat_test_age<-E_model(x_train_set, y_train_set,x_test_set, y_test_set,1)
+dat_test_prep<-data_prep(dat_test,"Chroage")
+
+dat_test_age<-E_model(dat_test_prep[["x_train_set"]], dat_test_prep[["y_train_set"]],dat_test_prep[["x_test_set"]],
+              dat_test_prep[["y_test_set"]],dat_test_prep[["tmp"]],1)
 
 png(filename = "dat_test_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
 plot(dat_test_age[[5]])

@@ -83,6 +83,28 @@ DNA_age_plot <- function(dat_list, target_col, plt_names=plt_names) {
 }
 
 
+data_prep<-function(dat,age_col_name){
+
+  x<-rep(1:round(nrow(dat)*0.8))
+  nfold<-createFolds(1:round(nrow(dat)*0.8), k = 10, list = TRUE, returnTrain = FALSE)
+  tmp<-1:round(nrow(dat)*0.8)
+  for(k in 1:10){tmp[nfold[[k]]]<-k}
+  train.names<-sample(rownames(dat), round(nrow(dat)*0.8),replace=FALSE)
+  train_set<-dat[train.names,]
+  test_set<-dat[!rownames(dat)%in%train.names,]
+
+  y_train_set<-train_set[,colnames(train_set)==age_col_name]
+  x_train_set<-as.matrix(train_set[,!colnames(train_set)==age_col_name])
+
+
+  y_test_set<-test_set[,colnames(test_set)==age_col_name]
+  x_test_set<-as.matrix(test_set[,!colnames(test_set)==age_col_name])
+
+  return(list("train_set"=train_set,"test_set"=test_set,"x_train_set"=x_train_set,
+              "y_train_set"=y_train_set,"x_test_set"=x_test_set,"y_test_set"=y_test_set,"tmp"=tmp))
+
+}
+
 
 ######
 
@@ -106,7 +128,7 @@ DNA_age_plot <- function(dat_list, target_col, plt_names=plt_names) {
 #' }
 #' @export
 
-E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
+E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,foldid,alpha){
 
   #perform k-fold cross-validation to find optimal lambda value
 
@@ -131,9 +153,74 @@ E_model<-function(x_train_set, y_train_set,x_test_set, y_test_set,alpha,foldid){
 }
 
 
+predict_bioage <- function(trained_model, meth_data, selected_features) {
+  # Subset relevant columns (CpGs + Chroage)
+  data_subset <- meth_data[, selected_features, drop = FALSE]
+
+  # Extract true chronological age
+  chronological_age <- data_subset[["Chroage"]]
+
+  # Create predictor matrix (exclude Chroage)
+  predictor_matrix <- as.matrix(data_subset[, colnames(data_subset) != "Chroage", drop = FALSE])
+
+  # Predict biological age
+  predicted_age <- predict(trained_model, newx = predictor_matrix)
+  result <- data.frame(
+    Bioage = as.numeric(predicted_age),
+    Chroage = as.numeric(chronological_age)
+  )
+  return(result)
+}
 
 
 
+
+
+# Task 3 B: Model building using linear regression on methylation data, with CpG sites preselected via a genetic algorithm.
+
+Lasso_GA_lm_model<-function(meth_obs,meth_pred,age_col_name,maxIter=10,nPop=100 ){
+
+  meth_obs_prep<-data_prep(meth_obs,age_col_name)
+
+  meth_obs_lasso<-E_model(meth_obs_prep[["x_train_set"]], meth_obs_prep[["y_train_set"]],meth_obs_prep[["x_test_set"]],
+                        meth_obs_prep[["y_test_set"]],meth_obs_prep[["tmp"]],1)
+
+  # Apply the model on meth_pred data set
+  meth_test_lasso<- meth_obs_lasso[[2]]
+  meth_pred_lasso<- predict_bioage(meth_obs_lasso[[4]],meth_pred, colnames(meth_obs))
+  # Apply genetic algorithm
+  meth_obs_GA<-LinRegGA(meth_obs_prep[["train_set"]],"Chroage",maxIter=maxIter,nPop=nPop)
+  meth_obs_GA<-meth_obs[,colnames(meth_obs)%in%c("Chroage",meth_obs_GA)]
+  meth_obs_GA_prep<-data_prep(meth_obs_GA,"Chroage")
+  meth_obs_GA_lm<- lm(as.formula(paste(age_col_name, "~ .")), data=data.frame(meth_obs_GA_prep[["train_set"]]))
+  ncoef=length(summary(meth_obs_GA_lm)$coefficients[-1,1]!=0)
+
+  #predict
+  meth_test_GA<- predict(meth_obs_GA_lm,data.frame(meth_obs_GA_prep[["x_test_set"]]))
+  meth_test_GA<-data.frame(cbind("Bioage"=as.numeric( meth_test_GA),"Chroage"=as.numeric(meth_obs_GA_prep[["y_test_set"]])))
+  meth_pred_GA<-predict(meth_obs_GA_lm,meth_pred[,colnames(meth_obs_GA_prep[["x_test_set"]])])
+
+  meth_pred_GA<-data.frame(cbind("Bioage"=as.numeric( meth_pred_GA),"Chroage"=as.numeric(meth_pred[,age_col_name])))
+
+  # retrieve the metrics
+  meth_test_lasso_metrics<-DNA_age_metrics(meth_test_lasso)
+  meth_pred_lasso_metrics<-DNA_age_metrics(meth_pred_lasso)
+
+  meth_test_GA_metrics<-DNA_age_metrics(meth_test_GA)
+  meth_pred_GA_metrics<-DNA_age_metrics(meth_pred_GA)
+
+  # Scatter plot
+
+  meth_pred_list<-list("meth_obs_age"=meth_test_lasso,"meth_pred_age"=meth_pred_lasso,"meth_obs_age_GA"= meth_test_GA,"meth_pred_age_GA"=meth_pred_GA)
+
+  DNA_age_plot_meth_pred_meth_data<-DNA_age_plot(meth_pred_list,"Chroage",
+                                                 c(paste( "LASSO","*\"  (EWAS)\""),paste( "LASSO","*\"  (LA)\""),
+                                                   paste( "GA","*\"  (EWAS)\""),paste( "GA","*\"  (LA)\"")))
+
+  return(list("meth_test_lasso_metrics"=meth_test_lasso_metrics,"meth_pred_lasso_metrics"=meth_pred_lasso_metrics,
+              "meth_test_GA_metrics"=meth_test_GA_metrics,"meth_pred_GA_metrics"=meth_pred_GA_metrics, "meth_pred_list"=meth_pred_list,
+              "DNA_age_plot_meth_pred_meth_data"=DNA_age_plot_meth_pred_meth_data,"meth_obs_lasso_lambda"=meth_obs_lasso[[5]]))
+}
 
 
 

@@ -25,8 +25,8 @@ find_missing_CpGs<-function(data_miss,clock){
   present_CpGs<-coefs$CpGmarker[-1][!coefs$CpGmarker[-1]%in%missing_CpGs]
   return(list(missing_CpGs,present_CpGs))
 }
-#load("Data/imputed_methylation_snp_beta_s.RData")
-#missing_CpGs<-find_missing_CpGs(imputed_methylation_snp_beta_s,"Horvath")
+
+
 
 #' add_missing_CpGs
 #' the function crates some empty value columns to the dataframe for the missings CpGs
@@ -116,17 +116,14 @@ find_nearest_CpGs<- function(dat, x) {
 #' @export
 
 
-replace_missings_CpGs<-function(dat,x){
+replace_missings_CpGs<-function(dat,df_annotation,clocks){
 
-  ref450<- read.csv("Data/ref450.csv")
-  ref850<- read.csv("Data/ref850.csv")
-  df_annotation<-data.frame(rbind(cbind("chr"=ref850$chr,"pos"=ref850$pos,"strand"=ref850$strand,"Name"=ref850$Name),
-                                  cbind("chr"=ref450$chr,"pos"=ref450$pos,"strand"=ref450$strand,"Name"=ref450$Name)))##a little bit more than the 850
-  df_annotation<-df_annotation[!duplicated(df_annotation$Name),]
+  missing_CpGs<-find_missing_CpGs(dat,clocks)
+
   dat_split<-data.frame(cbind("chr" =  df_annotation$chr[match(colnames(dat), df_annotation$Name)],
-                         "pos" = as.numeric(df_annotation$pos[match(colnames(dat), df_annotation$Name)]),
+                         "pos" = as.nucmeric(df_annotation$pos[match(colnames(dat), df_annotation$Name)]),
                          "strand" =  df_annotation$strand[match(colnames(dat), df_annotation$Name)],"Name"=colnames(dat)))
-  # dat<-data.frame(dat[order(dat[,"chr"],dat[,"strand"],dat[,"pos"]),])
+  dat<-data.frame(dat[order(dat[,"chr"],dat[,"strand"],dat[,"pos"]),])
   dat_split <- split(dat_split, f=list(dat_split$chr, dat_split$strand))
   v<-c()
   for(i in 1:length(dat_split)){
@@ -139,7 +136,7 @@ replace_missings_CpGs<-function(dat,x){
   }
   # find nearest neighbors for each element of the list
   nearest_CpGs <- mclapply(dat_split, function(item) {
-    find_nearest_CpGs(item, x)
+    find_nearest_CpGs(item, missing_CpGs[[1]])
   }, mc.cores = 4)
   # Combine results into a single data frame
   nearest_CpGs <- do.call(rbind, nearest_CpGs)
@@ -149,6 +146,6 @@ replace_missings_CpGs<-function(dat,x){
   return(list( dat,nearest_CpGs))
 }
 
-#dat<-replace_missings_CpGs(dat,missing_CpGs[[1]])
+
 
 
