@@ -5,7 +5,7 @@
 \title{replace_missings_CpGs
 replace missing CpGs values whithin single samples with their nearest neighbor CpGs values availble in the dataframe}
 \usage{
-replace_missings_CpGs(dat, x)
+replace_missings_CpGs(dat, df_annotation, clocks)
 }
 \arguments{
 \item{dat}{a dataframe in which the missing CpGs values for a given clock should be replaced, containing the CpGs in rows and Sample in columns.}

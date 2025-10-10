@@ -2,9 +2,9 @@
 % Please edit documentation in R/models_building.R
 \name{E_model}
 \alias{E_model}
-\title{E_model uses elastion net to build models}
+\title{E_model uses elastic net to build models}
 \usage{
-E_model(x_train_set, y_train_set, x_test_set, y_test_set, alpha, foldid)
+E_model(x_train_set, y_train_set, x_test_set, y_test_set, foldid, alpha)
 }
 \arguments{
 \item{x_train_set}{a matrix, train data set}
@@ -15,9 +15,9 @@ E_model(x_train_set, y_train_set, x_test_set, y_test_set, alpha, foldid)
 
 \item{y_test_set}{a numeric vector containing the chronological age  for the test set}
 
-\item{alpha}{a number between 0 and 1 in elastic net. 0 corrsponds to ridge and to 1 to lasso lasso regression}
-
 \item{foldid}{a vector of integers indicating which fold each observation belongs to}
+
+\item{alpha}{a number between 0 and 1 in elastic net. 0 corrsponds to ridge and to 1 to lasso lasso regression}
 }
 \value{
 A list containing the following elements:
@@ -32,5 +32,5 @@ A list containing the following elements:
 }
 }
 \description{
-E_model uses elastion net to build models
+E_model uses elastic net to build models
 }

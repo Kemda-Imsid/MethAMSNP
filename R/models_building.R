@@ -213,14 +213,8 @@ Lasso_GA_lm_model<-function(meth_obs,meth_pred,age_col_name,maxIter=10,nPop=100 
 
   meth_pred_list<-list("meth_obs_age"=meth_test_lasso,"meth_pred_age"=meth_pred_lasso,"meth_obs_age_GA"= meth_test_GA,"meth_pred_age_GA"=meth_pred_GA)
 
-  DNA_age_plot_meth_pred_meth_data<-DNA_age_plot(meth_pred_list,"Chroage",
-                                                 c(paste( "LASSO","*\"  (EWAS)\""),paste( "LASSO","*\"  (LA)\""),
-                                                   paste( "GA","*\"  (EWAS)\""),paste( "GA","*\"  (LA)\"")))
-
   return(list("meth_test_lasso_metrics"=meth_test_lasso_metrics,"meth_pred_lasso_metrics"=meth_pred_lasso_metrics,
               "meth_test_GA_metrics"=meth_test_GA_metrics,"meth_pred_GA_metrics"=meth_pred_GA_metrics, "meth_pred_list"=meth_pred_list,
-              "DNA_age_plot_meth_pred_meth_data"=DNA_age_plot_meth_pred_meth_data,"meth_obs_lasso_lambda"=meth_obs_lasso[[5]]))
+             ,"meth_obs_lasso_lambda"=meth_obs_lasso[[5]]))
 }
-
-
 

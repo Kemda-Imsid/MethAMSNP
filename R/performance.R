@@ -57,16 +57,21 @@ set.seed(23060830)
 DNA_age_plot_meth_pred_meth_obs_GA<-Lasso_GA_lm_model(meth_obs,meth_pred,"Chroage",maxIter=3000,nPop=1000)
 
 
+DNA_age_plot_meth_pred_meth_data<-DNA_age_plot(DNA_age_plot_meth_pred_meth_obs_GA[["meth_pred_list"]],"Chroage",
+                                               c(paste( "LASSO","*\"  (EWAS)\""),paste( "LASSO","*\"  (LA)\""),
+                                                 paste( "GA","*\"  (EWAS)\""),paste( "GA","*\"  (LA)\"")))
+
 png(filename = "meth_obs_72k_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
 plot(meth_obs_age[[7]])
 dev.off()
 
 png(filename = "res_blood_snp_CpGs_Blood_72k_116CpGs.png", width = 170, height = 170,units = "mm", res=300)
-cowplot::plot_grid(DNA_age_plot_meth_pred_meth_obs_GA[[6]][[1]],DNA_age_plot_meth_pred_meth_obs_GA[[6]][[2]],
-                   DNA_age_plot_meth_pred_meth_obs_GA[[6]][[3]],DNA_age_plot_meth_pred_meth_obs_GA[[6]][[4]],ncol =2,nrow=2,label_colour ="Blue3", label_x = '0', label_y = '1')
+cowplot::plot_grid(DNA_age_plot_meth_pred_meth_data[[1]],DNA_age_plot_meth_pred_meth_data[[2]],
+                   DNA_age_plot_meth_pred_meth_data[[3]],DNA_age_plot_meth_pred_meth_data[[4]],ncol =2,nrow=2,label_colour ="Blue3", label_x = '0', label_y = '1')
 dev.off()
 
-#Task 3 : Model building was performed using a dataset containing measured blood methylation values.
+
+#Task 3: Model building was performed using a dataset containing measured blood methylation values.
 #The dataset was reduced to include only CpG sites common with the predicted values dataset, filtered for those with an absolute correlation coefficient (|r|) ≥ 0.8.
 
 meth_pred_cor<-subset(meth_pred_cor, probeID %in% colnames(meth_obs) & r >= 0.8)
@@ -77,14 +82,16 @@ set.seed(23060830)
 
 DNA_age_plot_meth_pred_meth_obs_GA<-Lasso_GA_lm_model(meth_obs_cor80,meth_pred,"Chroage",maxIter=300,nPop=100)
 
-
+DNA_age_plot_meth_pred_meth_data<-DNA_age_plot(DNA_age_plot_meth_pred_meth_obs_GA[["meth_pred_list"]],"Chroage",
+                                               c(paste( "LASSO","*\"  (EWAS)\""),paste( "LASSO","*\"  (LA)\""),
+                                                 paste( "GA","*\"  (EWAS)\""),paste( "GA","*\"  (LA)\"")))
 png(filename = "meth_obs_750_modelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
 plot(meth_obs_age[[7]])
 dev.off()
 
 png(filename = "res_blood_snp_CpGs_Blood_750_53CpGs.png", width = 170, height = 170,units = "mm", res=300)
-cowplot::plot_grid(DNA_age_plot_meth_pred_meth_obs_GA[[6]][[1]],DNA_age_plot_meth_pred_meth_obs_GA[[6]][[2]],
-                   DNA_age_plot_meth_pred_meth_obs_GA[[6]][[3]],DNA_age_plot_meth_pred_meth_obs_GA[[6]][[4]],ncol =2,nrow=2,label_colour ="Blue3", label_x = '0', label_y = '1')
+cowplot::plot_grid(DNA_age_plot_meth_pred_meth_data[[1]],DNA_age_plot_meth_pred_meth_data[[2]],
+                   DNA_age_plot_meth_pred_meth_data[[3]],DNA_age_plot_meth_pred_meth_data[[4]],ncol =2,nrow=2,label_colour ="Blue3", label_x = '0', label_y = '1')
 dev.off()
 
 

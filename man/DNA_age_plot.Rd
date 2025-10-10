@@ -4,10 +4,10 @@
 \alias{DNA_age_plot}
 \title{DNA_age_plot provides a plot based on the computed data}
 \usage{
-DNA_age_plot(dat, target_col)
+DNA_age_plot(dat_list, target_col, plt_names = plt_names)
 }
 \arguments{
-\item{dat}{data frame containing in column Chronological age and estiomated Biological age}
+\item{dat_list}{list of data frames containing in column Chronological age and estiomated Biological age}
 
 \item{target_col}{String column name of the Chronological age}
 }
