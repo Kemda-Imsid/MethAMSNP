@@ -6,7 +6,8 @@
 
 # meth_pred: data frame containg predicted blood methylation values structured with CpG sites as columns and samples as rows. Imputation driven by the life_adult biobank
 # meth_obs: data frame containing measured blood methylation values structured with CpG sites as columns and samples as rows. data set was retrieved from the open source Ewas datahub (https://ngdc.cncb.ac.cn/ewas/datahub/download)
-# meth_pred_cor:  data frame containing the correlation coefficients between predicted and measured CpG methylation values.
+# meth_pred_cor_CpG: A data frame with one correlation coefficient per CpG site
+# meth_pred_cor_sample: A data frame with one correlation coefficient per sample
 # meta_meth_pred: meta data of data set meth_pred containing chronological age informations
 # meta_meth_obs: meta data of data set meth_pred containing chronological age informations
 
@@ -29,8 +30,67 @@ meth_obs<-data.frame(impute.knn(meth_obs)$data)
 meth_obs<-meth_obs[meta_meth_obs$sample_id,]
 meth_obs<-cbind(meth_obs,"Chroage"=meta_meth_obs$age)
 
+##Validation of DNA-methylation prediction
 
-# Task 1: Horvath age estimation
+meth_pred_cor_sample<-data.frame(vgl[["cor_ind"]])
+colnames(meth_pred_cor_sample)<-"r"
+meth_pred_cor_sample$r<-as.numeric(meth_pred_cor_sample$r)
+meth_pred_cor_CpG<-data.frame(vgl[["cor_transkript"]])
+colnames(meth_pred_cor_CpG)<-"r"
+meth_pred_cor_CpG$r<-as.numeric(meth_pred_cor_CpG$r)
+mean_value <-mean(meth_pred_cor_CpG$r,na.rm = TRUE)
+median_value <-median(meth_pred_cor_CpG$r,na.rm = TRUE)
+
+
+
+# Open a PNG file with width = 150mm (convert mm to inches: 1 inch = 25.4 mm)
+png(filename = "snp_imputation97_hist.png", width = 170, height = 90,units = "mm", res=300)
+
+# Layout: 2 rows, 2 columns
+par(mfrow = c(1, 2), mar = c(4, 4, 4, 2))  # margins: bottom, left, top, right
+
+# Histogram 1
+hist(meth_pred_cor_CpG$r, breaks = 7000,main = "Pearson correlation methyl-probes",
+     xlab = "r",
+     density = NULL, angle = 45, border = NULL,panel.first = grid(nx = NA, ny = NULL, col = "white", lty = "dashed"),
+     font.lab = 2,
+     cex.main=0.83, #change font size of title
+     cex.sub=0.83, #change font size of subtitle
+     cex.lab=0.83, #change font size of axis labels
+     cex.axis=0.83) #change font size of axis text )
+
+# boxplot(meth_pred_cor_CpG$r, breaks = 7000,main = "",
+#         density = NULL, angle = 45, border = NULL,horizontal = TRUE,xlab = "r",
+#
+#         cex.main=0.83, #change font size of title
+#         cex.sub=0.83, #change font size of subtitle
+#         cex.lab=0.83, #change font size of axis labels
+#         cex.axis=0.83) #change font size of axis text )
+
+
+# Histogram 2
+hist(meth_pred_cor_sample$r, main = "Pearson correlation individuals",
+     xlab = "r",
+     density = NULL, angle = 45, border = NULL,
+     font.lab = 2,
+     cex.main=0.83, #change font size of title
+     cex.sub=0.83, #change font size of subtitle
+     cex.lab=0.83, #change font size of axis labels
+     cex.axis=0.83) #change font size of axis text )
+
+# Boxplot 2
+# boxplot(meth_pred_cor_sample$r, main = "",
+#         density = NULL, angle = 45, border = NULL,horizontal = TRUE,xlab = "r",
+#
+#         cex.main=0.83, #change font size of title
+#         cex.sub=0.83, #change font size of subtitle
+#         cex.lab=0.83, #change font size of axis labels
+#         cex.axis=0.83) #change font size of axis text )
+
+dev.off()
+
+
+# Task 2 Horvath age estimation
 
 ref450<- read.csv("Data/ref450.csv")
 ref850<- read.csv("Data/ref850.csv")
@@ -50,7 +110,7 @@ cowplot::plot_grid(DNA_age_plot[[1]],ncol =1,nrow=1,label_colour ="Blue3", label
 dev.off()
 
 
-# Task 2 A: Model building using a data set with measured methylation values
+# Task 3A: Model building using a data set with measured methylation values
 
 set.seed(23060830)
 
@@ -71,7 +131,7 @@ cowplot::plot_grid(DNA_age_plot_meth_pred_meth_data[[1]],DNA_age_plot_meth_pred_
 dev.off()
 
 
-#Task 3: Model building was performed using a dataset containing measured blood methylation values.
+#Task 4: Model building was performed using a dataset containing measured blood methylation values.
 #The dataset was reduced to include only CpG sites common with the predicted values dataset, filtered for those with an absolute correlation coefficient (|r|) ≥ 0.8.
 
 meth_pred_cor<-subset(meth_pred_cor, probeID %in% colnames(meth_obs) & r >= 0.8)
@@ -80,7 +140,7 @@ meth_obs_cor80<-meth_obs[,c("Chroage",meth_pred_cor$probeID)]
 set.seed(23060830)
 
 
-DNA_age_plot_meth_pred_meth_obs_GA<-Lasso_GA_lm_model(meth_obs_cor80,meth_pred,"Chroage",maxIter=300,nPop=100)
+DNA_age_plot_meth_pred_meth_obs_GA<-Lasso_GA_lm_model(meth_obs_cor80,meth_pred,"Chroage",maxIter=3000,nPop=1000)
 
 DNA_age_plot_meth_pred_meth_data<-DNA_age_plot(DNA_age_plot_meth_pred_meth_obs_GA[["meth_pred_list"]],"Chroage",
                                                c(paste( "LASSO","*\"  (EWAS)\""),paste( "LASSO","*\"  (LA)\""),
