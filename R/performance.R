@@ -50,14 +50,22 @@ png(filename = "snp_imputation97_hist.png", width = 170, height = 90,units = "mm
 par(mfrow = c(1, 2), mar = c(4, 4, 4, 2))  # margins: bottom, left, top, right
 
 # Histogram 1
-hist(meth_pred_cor_CpG$r, breaks = 7000,main = "Pearson correlation methyl-probes",
-     xlab = "r",
-     density = NULL, angle = 45, border = NULL,panel.first = grid(nx = NA, ny = NULL, col = "white", lty = "dashed"),
-     font.lab = 2,
-     cex.main=0.83, #change font size of title
-     cex.sub=0.83, #change font size of subtitle
-     cex.lab=0.83, #change font size of axis labels
-     cex.axis=0.83) #change font size of axis text )
+hist_data_cpgs <- hist(meth_pred_cor_CpG$r, breaks = 7000,main = "Pearson correlation methyl-probes",
+                  xlab = "r",
+                  density = NULL, angle = 45, border = NULL,panel.first = grid(nx = NA, ny = NULL, col = "white", lty = "dashed"),
+                  font.lab = 2,
+                  cex.main=0.83, #change font size of title
+                  cex.sub=0.83, #change font size of subtitle
+                  cex.lab=0.83, #change font size of axis labels
+                  cex.axis=0.83) #change font size of axis text )
+
+# Draw a rectangle behind the bars for panel background
+usr <- par("usr")  # get plot limits
+rect(usr[1], usr[3], usr[2], usr[4], col = "#ebebeb", border = NA)
+grid(nx = NULL, ny = NULL, col = "white", lty = "solid", lwd = 1)
+# Redraw the histogram bars on top
+plot(hist_data, col = "gray70", border = "black", add = TRUE)
+
 
 # boxplot(meth_pred_cor_CpG$r, breaks = 7000,main = "",
 #         density = NULL, angle = 45, border = NULL,horizontal = TRUE,xlab = "r",
@@ -69,14 +77,31 @@ hist(meth_pred_cor_CpG$r, breaks = 7000,main = "Pearson correlation methyl-probe
 
 
 # Histogram 2
-hist(meth_pred_cor_sample$r, main = "Pearson correlation individuals",
-     xlab = "r",
-     density = NULL, angle = 45, border = NULL,
-     font.lab = 2,
-     cex.main=0.83, #change font size of title
-     cex.sub=0.83, #change font size of subtitle
-     cex.lab=0.83, #change font size of axis labels
-     cex.axis=0.83) #change font size of axis text )
+
+
+hist_data <- hist(meth_pred_cor_sample$r, plot = FALSE)
+
+# Draw a colored background first
+plot(
+  hist_data,
+  col = "gray70",      # bar fill color
+  border = "black",    # bar borders
+  main = "Pearson correlation individuals",
+  xlab = "r",
+  font.lab = 2,
+  cex.main = 0.83,
+  cex.lab = 0.83,
+  cex.axis = 0.83,
+  axes = TRUE,
+  frame.plot = TRUE
+)
+
+# Draw a rectangle behind the bars for panel background
+usr <- par("usr")  # get plot limits
+rect(usr[1], usr[3], usr[2], usr[4], col = "#ebebeb", border = NA)
+grid(nx = NULL, ny = NULL, col = "white", lty = "solid", lwd = 1)
+# Redraw the histogram bars on top
+plot(hist_data, col = "gray70", border = "black", add = TRUE)
 
 # Boxplot 2
 # boxplot(meth_pred_cor_sample$r, main = "",
@@ -110,7 +135,7 @@ cowplot::plot_grid(DNA_age_plot[[1]],ncol =1,nrow=1,label_colour ="Blue3", label
 dev.off()
 
 
-# Task 3A: Model building using a data set with measured methylation values
+# Task 3: Model building using a data set with measured methylation values
 
 set.seed(23060830)
 
@@ -155,6 +180,24 @@ cowplot::plot_grid(DNA_age_plot_meth_pred_meth_data[[1]],DNA_age_plot_meth_pred_
 dev.off()
 
 
+#Task 5: Model building was performed using a dataset containing from snp predicted blood methylation values.
 
+
+set.seed(23060830)
+
+
+DNA_age_plot_meth_pred_meth_pred<-Lasso_GA_lm_model(meth_pred,meth_pred,"Chroage",maxIter=3000,nPop=1000)
+
+DNA_age_plot_meth_pred_meth_pred_data<-DNA_age_plot(DNA_age_plot_meth_pred_meth_pred[["meth_pred_list"]],"Chroage",
+                                               c(paste( "LASSO","*\"  (LA)\""),paste( "LASSO","*\"  (LA)\""),
+                                                 paste( "GA","*\"  (LA)\""),paste( "GA","*\"  (LA)\"")))
+png(filename = "DNA_age_plot_meth_pred_meth_predmodelplotlambdacpgs.snp.png", width = 170, height = 90,units = "mm", res=300)
+plot(meth_obs_age[[7]])
+dev.off()
+
+png(filename = "DNA_age_plot_meth_pred_meth_pred.png", width = 170, height = 170,units = "mm", res=300)
+cowplot::plot_grid(DNA_age_plot_meth_pred_meth_pred_data[[1]],DNA_age_plot_meth_pred_meth_pred_data[[2]],
+                   DNA_age_plot_meth_pred_meth_pred_data[[3]],DNA_age_plot_meth_pred_meth_pred_data[[4]],ncol =2,nrow=2,label_colour ="Blue3", label_x = '0', label_y = '1')
+dev.off()
 
 

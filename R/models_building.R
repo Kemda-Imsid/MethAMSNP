@@ -189,8 +189,8 @@ Lasso_GA_lm_model<-function(meth_obs,meth_pred,age_col_name,maxIter=10,nPop=100 
   meth_test_lasso<- meth_obs_lasso[[2]]
   meth_pred_lasso<- predict_bioage(meth_obs_lasso[[4]],meth_pred, colnames(meth_obs))
   # Apply genetic algorithm
-  meth_obs_GA<-LinRegGA(meth_obs_prep[["train_set"]],"Chroage",maxIter=maxIter,nPop=nPop)
-  meth_obs_GA<-meth_obs[,colnames(meth_obs)%in%c("Chroage",meth_obs_GA)]
+  meth_obs_GA<-CpGs_Snp_snp_3#LinRegGA(meth_obs_prep[["train_set"]],"Chroage",maxIter=maxIter,nPop=nPop)
+  #meth_obs_GA<-meth_obs[,colnames(meth_obs)%in%c("Chroage",meth_obs_GA)]
   meth_obs_GA_prep<-data_prep(meth_obs_GA,"Chroage")
   meth_obs_GA_lm<- lm(as.formula(paste(age_col_name, "~ .")), data=data.frame(meth_obs_GA_prep[["train_set"]]))
   ncoef=length(summary(meth_obs_GA_lm)$coefficients[-1,1]!=0)
@@ -215,6 +215,6 @@ Lasso_GA_lm_model<-function(meth_obs,meth_pred,age_col_name,maxIter=10,nPop=100 
 
   return(list("meth_test_lasso_metrics"=meth_test_lasso_metrics,"meth_pred_lasso_metrics"=meth_pred_lasso_metrics,
               "meth_test_GA_metrics"=meth_test_GA_metrics,"meth_pred_GA_metrics"=meth_pred_GA_metrics, "meth_pred_list"=meth_pred_list,
-             ,"meth_obs_lasso_lambda"=meth_obs_lasso[[5]]))
+              "meth_obs_lasso_lambda"=meth_obs_lasso[[5]]))
 }
 
